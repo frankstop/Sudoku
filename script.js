@@ -5,6 +5,9 @@ const DIFFICULTY_SETTINGS = {
   expert: { givens: 24, hints: 2 },
 };
 
+const SAVE_KEY = "sudoku.activeSave.v1";
+const PREFS_KEY = "sudoku.preferences.v1";
+
 const state = {
   difficulty: "medium",
   puzzle: [],
@@ -21,14 +24,15 @@ const state = {
   seconds: 0,
   timerId: null,
   completed: false,
+  screen: "title",
 };
 
+const titleScreen = document.querySelector("#titleScreen");
+const gameScreen = document.querySelector("#gameScreen");
 const boardEl = document.querySelector("#board");
 const numberPadEl = document.querySelector("#numberPad");
 const difficultySelect = document.querySelector("#difficultySelect");
 const timerEl = document.querySelector("#timer");
-const statusTitle = document.querySelector("#statusTitle");
-const statusMessage = document.querySelector("#statusMessage");
 const progressValue = document.querySelector("#progressValue");
 const notesButton = document.querySelector("#notesButton");
 const undoButton = document.querySelector("#undoButton");
@@ -38,10 +42,20 @@ const hintCount = document.querySelector("#hintCount");
 const eraseButton = document.querySelector("#eraseButton");
 const resetButton = document.querySelector("#resetButton");
 const newGameButton = document.querySelector("#newGameButton");
+const resumeButton = document.querySelector("#resumeButton");
+const loadSaveButton = document.querySelector("#loadSaveButton");
+const saveNote = document.querySelector("#saveNote");
 const mistakeToggle = document.querySelector("#mistakeToggle");
+const settingsModal = document.querySelector("#settingsModal");
+const settingsSummary = document.querySelector("#settingsSummary");
+const titleSettingsButton = document.querySelector("#titleSettingsButton");
+const gameSettingsButton = document.querySelector("#gameSettingsButton");
+const closeSettingsButton = document.querySelector("#closeSettingsButton");
+const returnMenuButton = document.querySelector("#returnMenuButton");
 const completionModal = document.querySelector("#completionModal");
 const completeMessage = document.querySelector("#completeMessage");
 const playAgainButton = document.querySelector("#playAgainButton");
+const completeMenuButton = document.querySelector("#completeMenuButton");
 
 function range(count) {
   return Array.from({ length: count }, (_, index) => index);
@@ -77,20 +91,137 @@ function makePuzzle(solution, difficulty) {
   return puzzle;
 }
 
-function startTimer() {
-  clearInterval(state.timerId);
-  state.timerId = window.setInterval(() => {
-    if (!state.completed) {
-      state.seconds += 1;
-      renderTimer();
-    }
-  }, 1000);
+function readJSON(key) {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeJSON(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Private browsing or storage limits should not block gameplay.
+  }
+}
+
+function removeSave() {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {
+    // Ignore storage errors.
+  }
+  updateSaveButtons();
+}
+
+function isGrid(grid) {
+  return Array.isArray(grid) && grid.length === 9 && grid.every((row) => Array.isArray(row) && row.length === 9);
+}
+
+function getSavedGame() {
+  const saved = readJSON(SAVE_KEY);
+  if (!saved || !isGrid(saved.puzzle) || !isGrid(saved.solution) || !isGrid(saved.values)) return null;
+  if (!DIFFICULTY_SETTINGS[saved.difficulty]) return null;
+  return saved;
+}
+
+function savePreferences() {
+  writeJSON(PREFS_KEY, {
+    difficulty: state.difficulty,
+    mistakeChecking: state.mistakeChecking,
+  });
+}
+
+function loadPreferences() {
+  const prefs = readJSON(PREFS_KEY);
+  if (!prefs) return;
+  if (DIFFICULTY_SETTINGS[prefs.difficulty]) state.difficulty = prefs.difficulty;
+  if (typeof prefs.mistakeChecking === "boolean") state.mistakeChecking = prefs.mistakeChecking;
+}
+
+function gameSnapshot() {
+  return {
+    difficulty: state.difficulty,
+    puzzle: state.puzzle,
+    solution: state.solution,
+    values: state.values,
+    notes: state.notes,
+    locked: state.locked,
+    selected: state.selected,
+    notesMode: state.notesMode,
+    mistakeChecking: state.mistakeChecking,
+    undoStack: state.undoStack,
+    redoStack: state.redoStack,
+    hintsLeft: state.hintsLeft,
+    seconds: state.seconds,
+    completed: state.completed,
+    savedAt: Date.now(),
+  };
+}
+
+function saveGame() {
+  savePreferences();
+  if (!state.puzzle.length || state.completed) return;
+  writeJSON(SAVE_KEY, gameSnapshot());
+  updateSaveButtons();
 }
 
 function formatTime(seconds) {
   const mins = Math.floor(seconds / 60).toString().padStart(2, "0");
   const secs = (seconds % 60).toString().padStart(2, "0");
   return `${mins}:${secs}`;
+}
+
+function titleCase(value) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function updateSaveButtons() {
+  const saved = getSavedGame();
+  const hasSave = Boolean(saved);
+  resumeButton.disabled = !hasSave;
+  loadSaveButton.disabled = !hasSave;
+  resumeButton.setAttribute("aria-disabled", String(!hasSave));
+  loadSaveButton.setAttribute("aria-disabled", String(!hasSave));
+  saveNote.textContent = hasSave
+    ? `Saved ${titleCase(saved.difficulty)} game at ${formatTime(saved.seconds || 0)}.`
+    : "No saved puzzle yet.";
+}
+
+function showTitle() {
+  state.screen = "title";
+  clearInterval(state.timerId);
+  titleScreen.hidden = false;
+  gameScreen.hidden = true;
+  settingsModal.hidden = true;
+  completionModal.hidden = true;
+  difficultySelect.value = state.difficulty;
+  mistakeToggle.checked = state.mistakeChecking;
+  updateSaveButtons();
+}
+
+function showGame() {
+  state.screen = "game";
+  titleScreen.hidden = true;
+  gameScreen.hidden = false;
+  settingsModal.hidden = true;
+  renderTimer();
+  render();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(state.timerId);
+  state.timerId = window.setInterval(() => {
+    if (!state.completed && state.screen === "game") {
+      state.seconds += 1;
+      renderTimer();
+      saveGame();
+    }
+  }, 1000);
 }
 
 function renderTimer() {
@@ -101,13 +232,16 @@ function snapshot() {
   return {
     values: state.values.map((row) => [...row]),
     notes: state.notes.map((row) => row.map((cell) => [...cell])),
+    hintsLeft: state.hintsLeft,
   };
 }
 
 function restore(snapshotValue) {
   state.values = snapshotValue.values.map((row) => [...row]);
   state.notes = snapshotValue.notes.map((row) => row.map((cell) => [...cell]));
+  state.hintsLeft = snapshotValue.hintsLeft;
   render();
+  saveGame();
 }
 
 function pushUndo() {
@@ -147,9 +281,7 @@ function isNumberComplete(number) {
     for (let col = 0; col < 9; col += 1) {
       if (state.values[row][col] === number) {
         placed += 1;
-        if (state.solution[row][col] !== number || hasConflict(row, col, number)) {
-          return false;
-        }
+        if (state.solution[row][col] !== number || hasConflict(row, col, number)) return false;
       }
     }
   }
@@ -197,7 +329,7 @@ function renderBoard() {
       if (value) {
         cell.textContent = value;
       } else {
-        const noteValues = state.notes[row][col];
+        const noteValues = state.notes[row][col] || [];
         if (noteValues.length) {
           const notes = document.createElement("span");
           notes.className = "notes";
@@ -236,53 +368,32 @@ function renderPad() {
   }
 }
 
-function renderStatus() {
+function renderProgress() {
   const filled = state.values.flat().filter(Boolean).length;
-  const progress = Math.round((filled / 81) * 100);
-  progressValue.textContent = `${progress}%`;
-
-  const mistakes = range(81).filter((index) => {
-    const row = Math.floor(index / 9);
-    const col = index % 9;
-    const value = state.values[row][col];
-    return value && (hasConflict(row, col, value) || isWrongAgainstSolution(row, col));
-  }).length;
-
-  if (state.completed) {
-    statusTitle.textContent = "Puzzle complete";
-    statusMessage.textContent = "Clean solve. Start a new board when ready.";
-  } else if (state.mistakeChecking && mistakes) {
-    statusTitle.textContent = `${mistakes} mistake${mistakes === 1 ? "" : "s"} found`;
-    statusMessage.textContent = "Highlighted cells need another look.";
-  } else if (state.notesMode) {
-    statusTitle.textContent = "Notes mode";
-    statusMessage.textContent = "Tap candidates to pencil them in.";
-  } else {
-    statusTitle.textContent = "Good progress";
-    statusMessage.textContent = "Select a cell and place a number.";
-  }
-
-  hintCount.textContent = state.hintsLeft;
-  hintButton.disabled = state.hintsLeft === 0 || state.completed;
+  progressValue.textContent = `${Math.round((filled / 81) * 100)}%`;
 }
 
 function renderControls() {
   notesButton.setAttribute("aria-pressed", String(state.notesMode));
   notesButton.querySelector("small").textContent = state.notesMode ? "On" : "Off";
   mistakeToggle.checked = state.mistakeChecking;
+  hintCount.textContent = state.hintsLeft;
+  hintButton.disabled = state.hintsLeft === 0 || state.completed || state.screen !== "game";
   updateHistoryButtons();
 }
 
 function render() {
+  if (!state.puzzle.length) return;
   renderBoard();
   renderPad();
-  renderStatus();
+  renderProgress();
   renderControls();
 }
 
 function selectCell(row, col) {
   state.selected = { row, col };
   render();
+  saveGame();
 }
 
 function clearNotesWithNumber(row, col, number) {
@@ -302,7 +413,7 @@ function clearNotesWithNumber(row, col, number) {
 }
 
 function enterNumber(number) {
-  if (!state.selected || state.completed) return;
+  if (!state.selected || state.completed || state.screen !== "game") return;
   if (isNumberComplete(number)) return;
   const { row, col } = state.selected;
   if (state.locked[row][col]) return;
@@ -318,11 +429,12 @@ function enterNumber(number) {
     clearNotesWithNumber(row, col, number);
   }
   render();
+  saveGame();
   validateCompletion();
 }
 
 function eraseSelected() {
-  if (!state.selected || state.completed) return;
+  if (!state.selected || state.completed || state.screen !== "game") return;
   const { row, col } = state.selected;
   if (state.locked[row][col]) return;
   if (!state.values[row][col] && !state.notes[row][col].length) return;
@@ -330,24 +442,23 @@ function eraseSelected() {
   state.values[row][col] = 0;
   state.notes[row][col] = [];
   render();
+  saveGame();
 }
 
 function undo() {
   if (!state.undoStack.length) return;
   state.redoStack.push(snapshot());
   restore(state.undoStack.pop());
-  updateHistoryButtons();
 }
 
 function redo() {
   if (!state.redoStack.length) return;
   state.undoStack.push(snapshot());
   restore(state.redoStack.pop());
-  updateHistoryButtons();
 }
 
 function giveHint() {
-  if (state.completed || state.hintsLeft <= 0) return;
+  if (state.screen !== "game" || state.completed || state.hintsLeft <= 0) return;
   const selected = state.selected;
   let target = selected && !state.locked[selected.row][selected.col] && state.values[selected.row][selected.col] !== state.solution[selected.row][selected.col]
     ? selected
@@ -368,16 +479,19 @@ function giveHint() {
   state.selected = target;
   clearNotesWithNumber(target.row, target.col, state.values[target.row][target.col]);
   render();
+  saveGame();
   validateCompletion();
 }
 
 function resetPuzzle() {
+  if (!state.puzzle.length) return;
   pushUndo();
   state.values = state.puzzle.map((row) => [...row]);
   state.notes = range(9).map(() => range(9).map(() => []));
   state.completed = false;
   completionModal.hidden = true;
   render();
+  saveGame();
 }
 
 function validateCompletion() {
@@ -386,20 +500,38 @@ function validateCompletion() {
 
   const solved = state.values.every((row, r) => row.every((value, c) => value === state.solution[r][c]));
   if (!solved) {
-    renderStatus();
+    render();
+    saveGame();
     return false;
   }
 
   state.completed = true;
   clearInterval(state.timerId);
+  removeSave();
   render();
   completeMessage.textContent = `${titleCase(state.difficulty)} solved in ${formatTime(state.seconds)}.`;
   completionModal.hidden = false;
   return true;
 }
 
-function titleCase(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+function normalizeLoadedGame(saved) {
+  state.difficulty = saved.difficulty;
+  state.solution = saved.solution.map((row) => [...row]);
+  state.puzzle = saved.puzzle.map((row) => [...row]);
+  state.values = saved.values.map((row) => [...row]);
+  state.locked = isGrid(saved.locked) ? saved.locked.map((row) => row.map(Boolean)) : state.puzzle.map((row) => row.map(Boolean));
+  state.notes = Array.isArray(saved.notes) && saved.notes.length === 9 && saved.notes.every((row) => Array.isArray(row) && row.length === 9)
+    ? saved.notes.map((row) => row.map((cell) => Array.isArray(cell) ? cell.filter((n) => n >= 1 && n <= 9) : []))
+    : range(9).map(() => range(9).map(() => []));
+  state.selected = saved.selected && Number.isInteger(saved.selected.row) && Number.isInteger(saved.selected.col) ? saved.selected : null;
+  state.notesMode = Boolean(saved.notesMode);
+  state.mistakeChecking = typeof saved.mistakeChecking === "boolean" ? saved.mistakeChecking : state.mistakeChecking;
+  state.undoStack = Array.isArray(saved.undoStack) ? saved.undoStack : [];
+  state.redoStack = Array.isArray(saved.redoStack) ? saved.redoStack : [];
+  state.hintsLeft = Number.isInteger(saved.hintsLeft) ? saved.hintsLeft : DIFFICULTY_SETTINGS[state.difficulty].hints;
+  state.seconds = Number.isInteger(saved.seconds) ? saved.seconds : 0;
+  state.completed = Boolean(saved.completed);
+  difficultySelect.value = state.difficulty;
 }
 
 function newGame(difficulty = state.difficulty) {
@@ -413,28 +545,60 @@ function newGame(difficulty = state.difficulty) {
   state.notes = range(9).map(() => range(9).map(() => []));
   state.selected = null;
   state.notesMode = false;
-  state.mistakeChecking = true;
   state.undoStack = [];
   state.redoStack = [];
   state.hintsLeft = DIFFICULTY_SETTINGS[difficulty].hints;
   state.seconds = 0;
   state.completed = false;
-  completionModal.hidden = true;
   difficultySelect.value = difficulty;
-  renderTimer();
-  render();
-  startTimer();
+  completionModal.hidden = true;
+  saveGame();
+  showGame();
+}
+
+function loadSavedGame() {
+  const saved = getSavedGame();
+  if (!saved) {
+    updateSaveButtons();
+    return;
+  }
+  normalizeLoadedGame(saved);
+  showGame();
+}
+
+function openSettings() {
+  const inGame = state.screen === "game" && state.puzzle.length;
+  settingsModal.dataset.context = inGame ? "game" : "title";
+  settingsSummary.textContent = inGame ? "Puzzle options and game actions." : "Default options for your next puzzle.";
+  mistakeToggle.checked = state.mistakeChecking;
+  renderProgress();
+  renderControls();
+  settingsModal.hidden = false;
+}
+
+function closeSettings() {
+  settingsModal.hidden = true;
 }
 
 difficultySelect.addEventListener("change", (event) => {
-  newGame(event.target.value);
+  state.difficulty = event.target.value;
+  savePreferences();
 });
 
-newGameButton.addEventListener("click", () => newGame(state.difficulty));
+newGameButton.addEventListener("click", () => newGame(difficultySelect.value));
+resumeButton.addEventListener("click", loadSavedGame);
+loadSaveButton.addEventListener("click", loadSavedGame);
 playAgainButton.addEventListener("click", () => newGame(state.difficulty));
+completeMenuButton.addEventListener("click", showTitle);
+titleSettingsButton.addEventListener("click", openSettings);
+gameSettingsButton.addEventListener("click", openSettings);
+closeSettingsButton.addEventListener("click", closeSettings);
+returnMenuButton.addEventListener("click", showTitle);
+
 notesButton.addEventListener("click", () => {
   state.notesMode = !state.notesMode;
   render();
+  saveGame();
 });
 undoButton.addEventListener("click", undo);
 redoButton.addEventListener("click", redo);
@@ -444,10 +608,24 @@ resetButton.addEventListener("click", resetPuzzle);
 mistakeToggle.addEventListener("change", () => {
   state.mistakeChecking = mistakeToggle.checked;
   render();
+  saveGame();
+  savePreferences();
+});
+
+settingsModal.addEventListener("click", (event) => {
+  if (event.target === settingsModal) closeSettings();
+});
+
+completionModal.addEventListener("click", (event) => {
+  if (event.target === completionModal) completionModal.hidden = true;
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.key === "Escape") {
+    closeSettings();
+    return;
+  }
+  if (state.screen !== "game" || event.metaKey || event.ctrlKey || event.altKey) return;
   if (/^[1-9]$/.test(event.key)) {
     enterNumber(Number(event.key));
     event.preventDefault();
@@ -459,6 +637,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "n" || event.key === "N") {
     state.notesMode = !state.notesMode;
     render();
+    saveGame();
   }
   if (event.key.startsWith("Arrow") && state.selected) {
     const next = { ...state.selected };
@@ -468,8 +647,11 @@ document.addEventListener("keydown", (event) => {
     if (event.key === "ArrowRight") next.col = Math.min(8, next.col + 1);
     state.selected = next;
     render();
+    saveGame();
     event.preventDefault();
   }
 });
 
-newGame("medium");
+loadPreferences();
+difficultySelect.value = state.difficulty;
+showTitle();

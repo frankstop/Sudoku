@@ -10,17 +10,19 @@
   </head>
   <body>
     <div class="app-shell">
-      <header class="topbar" aria-label="Game controls">
+      <section class="title-screen" id="titleScreen" aria-labelledby="titleHeading">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">
             <span></span><span></span><span></span>
             <span></span><span></span><span></span>
             <span></span><span></span><span></span>
           </span>
-          <h1>Sudoku</h1>
+          <h1 id="titleHeading">Sudoku</h1>
         </div>
 
-        <div class="topbar-controls">
+        <div class="title-card">
+          <p class="title-copy">A calm daily puzzle with notes, hints, undo, and save support.</p>
+
           <label class="field">
             <span>Difficulty</span>
             <select id="difficultySelect" aria-label="Difficulty">
@@ -31,82 +33,121 @@
             </select>
           </label>
 
+          <div class="title-actions">
+            <button class="primary-button" id="newGameButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              New Game
+            </button>
+
+            <button class="menu-button" id="resumeButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7Z" /></svg>
+              Resume
+            </button>
+
+            <button class="menu-button" id="loadSaveButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" /><path d="M17 21v-8H7v8" /><path d="M7 3v5h8" /></svg>
+              Load Save
+            </button>
+
+            <button class="menu-button" id="titleSettingsButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 0 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.3 7A2 2 0 1 1 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1a2 2 0 0 1 0 4H21a1.7 1.7 0 0 0-1.6 1Z" /></svg>
+              Settings
+            </button>
+          </div>
+
+          <p class="save-note" id="saveNote">No saved puzzle yet.</p>
+        </div>
+      </section>
+
+      <section class="game-screen" id="gameScreen" hidden>
+        <header class="game-topbar" aria-label="Game status">
           <div class="timer-card" aria-live="polite">
             <span>Time</span>
             <strong id="timer">00:00</strong>
           </div>
 
-          <button class="primary-button" id="newGameButton" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-            New Game
+          <button class="icon-button" id="gameSettingsButton" type="button" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 0 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.3 7A2 2 0 1 1 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1a2 2 0 0 1 0 4H21a1.7 1.7 0 0 0-1.6 1Z" /></svg>
+          </button>
+        </header>
+
+        <main class="game-layout">
+          <section class="board-section" aria-label="Sudoku puzzle">
+            <div class="board-wrap">
+              <div id="board" class="board" role="grid" aria-label="Sudoku board"></div>
+            </div>
+          </section>
+
+          <section class="controls-section" aria-label="Puzzle actions">
+            <div class="number-pad" id="numberPad" aria-label="Number pad"></div>
+
+            <div class="action-grid">
+              <button class="action-button toggle-button" id="notesButton" type="button" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z" /><path d="m13 7 4 4" /></svg>
+                <span>Notes</span>
+                <small>Off</small>
+              </button>
+
+              <button class="action-button" id="undoButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
+                Undo
+              </button>
+
+              <button class="action-button" id="redoButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></svg>
+                Redo
+              </button>
+
+              <button class="action-button" id="eraseButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6a3 3 0 0 1 4 4L7 21Z" /><path d="m12 8 4 4" /><path d="M7 21h12" /></svg>
+                Erase
+              </button>
+            </div>
+          </section>
+        </main>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="settingsModal" hidden>
+      <section class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="settings-head">
+          <div>
+            <h2 id="settingsTitle">Settings</h2>
+            <p id="settingsSummary">Game options and puzzle actions.</p>
+          </div>
+          <button class="icon-button" id="closeSettingsButton" type="button" aria-label="Close settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
           </button>
         </div>
-      </header>
 
-      <main class="game-layout">
-        <section class="board-section" aria-label="Sudoku puzzle">
-          <div class="board-wrap">
-            <div id="board" class="board" role="grid" aria-label="Sudoku board"></div>
-          </div>
-
-          <div class="status-strip" id="statusStrip" aria-live="polite">
-            <div class="status-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m7 12 3 3 7-7" /></svg>
-            </div>
-            <div>
-              <strong id="statusTitle">Good progress</strong>
-              <span id="statusMessage">Select a cell and place a number.</span>
-            </div>
-            <div class="progress">
-              <strong id="progressValue">0%</strong>
-              <span>Complete</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="controls-section" aria-label="Puzzle actions">
-          <div class="number-pad" id="numberPad" aria-label="Number pad"></div>
-
-          <div class="action-grid">
-            <button class="action-button toggle-button" id="notesButton" type="button" aria-pressed="false">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z" /><path d="m13 7 4 4" /></svg>
-              <span>Notes</span>
-              <small>Off</small>
-            </button>
-
-            <button class="action-button" id="undoButton" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
-              Undo
-            </button>
-
-            <button class="action-button" id="redoButton" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></svg>
-              Redo
-            </button>
-
-            <button class="action-button" id="hintButton" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6" /><path d="M10 22h4" /><path d="M8.5 14.5a6 6 0 1 1 7 0c-.9.7-1.5 1.5-1.5 2.5h-4c0-1-.6-1.8-1.5-2.5Z" /></svg>
-              <span>Hint</span>
-              <small id="hintCount">3</small>
-            </button>
-
-            <button class="action-button" id="eraseButton" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L14 6a3 3 0 0 1 4 4L7 21Z" /><path d="m12 8 4 4" /><path d="M7 21h12" /></svg>
-              Erase
-            </button>
-
-            <button class="action-button danger" id="resetButton" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8" /><path d="M21 3v5h-5" /><path d="M21 12A9 9 0 0 1 5.7 18.4L3 16" /><path d="M3 21v-5h5" /></svg>
-              Reset
-            </button>
-          </div>
-
+        <div class="settings-list">
           <label class="mistake-toggle">
             <input id="mistakeToggle" type="checkbox" checked />
             <span>Mistake checking</span>
           </label>
-        </section>
-      </main>
+
+          <div class="settings-row puzzle-setting" id="progressRow">
+            <span>Progress</span>
+            <strong id="progressValue">0%</strong>
+          </div>
+
+          <button class="action-button puzzle-setting" id="hintButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6" /><path d="M10 22h4" /><path d="M8.5 14.5a6 6 0 1 1 7 0c-.9.7-1.5 1.5-1.5 2.5h-4c0-1-.6-1.8-1.5-2.5Z" /></svg>
+            <span>Hint</span>
+            <small id="hintCount">3</small>
+          </button>
+
+          <button class="action-button danger puzzle-setting" id="resetButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8" /><path d="M21 3v5h-5" /><path d="M21 12A9 9 0 0 1 5.7 18.4L3 16" /><path d="M3 21v-5h5" /></svg>
+            Reset Puzzle
+          </button>
+
+          <button class="action-button puzzle-setting" id="returnMenuButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18" /><path d="m3 12 5-5" /><path d="m3 12 5 5" /></svg>
+            Main Menu
+          </button>
+        </div>
+      </section>
     </div>
 
     <div class="modal-backdrop" id="completionModal" hidden>
@@ -116,9 +157,24 @@
         </div>
         <h2 id="completeTitle">Puzzle complete</h2>
         <p id="completeMessage"></p>
-        <button class="primary-button" id="playAgainButton" type="button">Play Again</button>
+        <div class="completion-actions">
+          <button class="primary-button" id="playAgainButton" type="button">Play Again</button>
+          <button class="menu-button" id="completeMenuButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18" /><path d="m3 12 5-5" /><path d="m3 12 5 5" /></svg>
+            Main Menu
+          </button>
+        </div>
       </section>
     </div>
+
+    <noscript>
+      <div class="modal-backdrop">
+        <section class="completion-card">
+          <h2>JavaScript required</h2>
+          <p>Enable JavaScript to play Sudoku.</p>
+        </section>
+      </div>
+    </noscript>
 
     <script src="script.js"></script>
   </body>

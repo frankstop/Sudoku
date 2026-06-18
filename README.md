@@ -13,6 +13,7 @@ The app runs without a backend, build step, paid service, or framework. It can b
 ## Features
 
 - Playable Sudoku puzzles with Easy, Medium, Hard, and Expert difficulty levels
+- Title screen with difficulty selection, new game, resume, load save, and settings
 - Locked givens with a distinct visual style
 - Editable cells for player entries
 - Mouse, touch, and keyboard input
@@ -20,6 +21,7 @@ The app runs without a backend, build step, paid service, or framework. It can b
 - Notes mode for pencil marks
 - Hint, erase, reset, undo, and redo controls
 - Timer and progress display
+- Local save data for resuming an active puzzle
 - Mistake checking with inline highlights
 - Selected cell, matching number, row, column, and box highlights
 - Completed-number handling in the number pad
@@ -65,4 +67,5 @@ https://frankstop.github.io/Sudoku/
 - No bundler
 - No package install required
 - Plain HTML, CSS, and JavaScript
+- Active puzzle saves use browser `localStorage`
 - Google Analytics tag included in `index.html`
