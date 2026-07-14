@@ -211,6 +211,7 @@ function showGame() {
   renderTimer();
   render();
   startTimer();
+  if (window.embedAnalytics) window.embedAnalytics.startRun("Sudoku");
 }
 
 function startTimer() {
@@ -506,6 +507,7 @@ function validateCompletion() {
   }
 
   state.completed = true;
+  if (window.embedAnalytics) window.embedAnalytics.endRun("complete");
   clearInterval(state.timerId);
   removeSave();
   render();
